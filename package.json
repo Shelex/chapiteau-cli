@@ -10,7 +10,7 @@
         "bin"
     ],
     "bin": {
-        "chapiteau-cli": "./bin/app-${platform}-${arch}"
+        "chapiteau-cli": "./bin/chapiteau-cli-${platform}-${arch}"
     },
     "repository": {
         "type": "git",
