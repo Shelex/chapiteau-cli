@@ -7,7 +7,7 @@
     },
     "private": false,
     "files": [
-        "bin"
+        "bin", "install.js"
     ],
     "bin": {
         "chapiteau-cli": "./bin/chapiteau-cli-${platform}-${arch}"
