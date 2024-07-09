@@ -1,0 +1,19 @@
+{
+    "name": "chapiteau-cli",
+    "version": "1.0.0",
+    "description": "cli for chapiteau service",
+    "scripts": {
+        "postinstall": "node install.js"
+    },
+    "private": false,
+    "files": [
+        "bin"
+    ],
+    "bin": {
+        "chapiteau-cli": "./bin/app-${platform}-${arch}"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Shelex/chapiteau-cli.git"
+    }
+}

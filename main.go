@@ -1,117 +1,76 @@
 package main
 
 import (
-	"archive/zip"
-	"bytes"
-	"encoding/base64"
-	"flag"
 	"fmt"
-	"io"
-	"log"
 	"os"
-	"path/filepath"
-	"strings"
+
+	"github.com/urfave/cli/v2"
 )
 
+type ChapiteauArguments struct {
+	Path       string
+	ServiceUrl string
+	Auth       string
+	Project    string
+	BuildId    string
+	BuildName  string
+	ReportURL  string
+}
+
 func main() {
-	// Define command-line flags
-	htmlPath := flag.String("src", "playwright-report", "Path to test HTML report")
-	// apiToken := flag.String("apiToken", "", "API token")
-	// projectId := flag.String("project id", "", "Project id")
-	// url := flag.String("url", "", "hosted playwright report html url")
-	// buildId := flag.String("buildId", "", "CI Build ID")
-	// buildUrl := flag.String("buildUrl", "", "CI Build URL")
+	app := &cli.App{
+		Name:  "chapiteau-cli",
+		Usage: "Upload report/data to the chapiteau service",
+		Commands: []*cli.Command{
+			{
+				Name:  "upload",
+				Usage: "Upload a report or just index.html file",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "path", Usage: "Path to the folder or file to upload", Required: true},
+					&cli.StringFlag{Name: "url", Usage: "Chapiteau service url", Required: true},
+					&cli.StringFlag{Name: "auth", Usage: "Authentication token", Required: true},
+					&cli.StringFlag{Name: "project", Usage: "Project ID", Required: true},
+					&cli.StringFlag{Name: "build-id", Usage: "CI Build ID"},
+					&cli.StringFlag{Name: "build-name", Usage: "CI Build Name"},
+					&cli.StringFlag{Name: "report-url", Usage: "Playwright Report URL hosted elsewhere"},
+				},
+				Action: func(c *cli.Context) error {
+					args := ChapiteauArguments{
+						Path:       c.String("path"),
+						ServiceUrl: c.String("url"),
+						Auth:       c.String("auth"),
+						Project:    c.String("project"),
+						BuildId:    c.String("build-id"),
+						BuildName:  c.String("build-name"),
+						ReportURL:  c.String("report-url"),
+					}
 
-	flag.Parse()
+					isDir, err := isDirectory(args.Path)
+					if err != nil {
+						return fmt.Errorf("failed to check if path is a directory: %s", err)
+					}
 
-	// Read the HTML file
-
-	if htmlPath == nil {
-		fmt.Println("Missing report path")
-		return
+					if isDir {
+						return uploadReport(args)
+					} else {
+						return uploadIndexHtml(args)
+					}
+				},
+			},
+		},
 	}
 
-	htmlContent, err := os.ReadFile(filepath.Join(*htmlPath, "index.html"))
+	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println("Error reading HTML file:", err)
-		return
+		fmt.Println(err)
 	}
+}
 
-	// Extract the base64 string
-	htmlString := string(htmlContent)
-	start := strings.Index(htmlString, "window.playwrightReportBase64 = \"") + len("window.playwrightReportBase64 = \"")
-	end := strings.Index(htmlString[start:], "\";") + start
-
-	base64Header := "data:application/zip;base64,"
-	base64String := strings.TrimPrefix(htmlString[start:end], base64Header)
-
-	// Decode the base64 string into zip
-	decodedData, err := base64.StdEncoding.DecodeString(base64String)
+func isDirectory(path string) (isDir bool, err error) {
+	fileInfo, err := os.Stat(path)
 	if err != nil {
-		fmt.Println("Error decoding base64 string:", err)
-		return
+		return false, err
 	}
 
-	// Unzip the decoded data
-	zipReader, err := zip.NewReader(bytes.NewReader(decodedData), int64(len(decodedData)))
-	if err != nil {
-		fmt.Println("Error unzipping data:", err)
-		return
-	}
-
-	// find report.json data in decoded zip archive
-	var reportJson []byte
-	for _, file := range zipReader.File {
-		if file.Name != "report.json" {
-			continue
-		}
-		rc, err := file.Open()
-		if err != nil {
-			fmt.Println("Error opening report.json:", err)
-			return
-		}
-		reportJson, err = io.ReadAll(rc)
-		rc.Close()
-		if err != nil {
-			fmt.Println("Error reading report.json:", err)
-			return
-		}
-		break
-	}
-
-	if reportJson == nil {
-		fmt.Println("report.json not found in the zip archive")
-		return
-	}
-
-	log.Println(string(reportJson))
-
-	// TODO parse []byte into proper Report struct
-	// TODO
-	// Prepare the POST request
-	// postUrl := "https://chapiteau.shelex.dev/api/report"
-	// req, err := http.NewRequest("POST", postUrl, bytes.NewBuffer(reportJson))
-	// if err != nil {
-	// 	fmt.Println("Error creating POST request:", err)
-	// 	return
-	// }
-	// req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("Authorization", "Bearer "+*apiToken)
-
-	// // Send the POST request
-	// client := &http.Client{}
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	fmt.Println("Error sending POST request:", err)
-	// 	return
-	// }
-	// defer resp.Body.Close()
-
-	// // Print the response
-	// body, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	fmt.Println("Error reading response:", err)
-	// 	return
-	// }
-	// fmt.Println("Response:", string(body))
+	return fileInfo.IsDir(), nil
 }
