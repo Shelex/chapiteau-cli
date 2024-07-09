@@ -1,9 +1,11 @@
-name: Build, Release, and Publish
+name: Release
 
 on:
     push:
         branches:
             - master
+    release:
+        types: [created]
 
 jobs:
     build:
@@ -20,82 +22,67 @@ jobs:
                     - os: windows
                       arch: amd64
         steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
             - name: Set up Go
-              uses: actions/setup-go@v4
+              uses: actions/setup-go@v5
               with:
                   go-version: "1.21"
 
-            - name: Build Go binary
+            - name: Build binary
               run: |
-                  GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o bin/chapiteau-cli-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} .
+                  mkdir -p bin
+                  GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o bin/chapiteau-cli-${{ matrix.os }}-${{ matrix.arch }}
 
-            - name: Upload binary artifact
+            - name: Upload binary as artifact
               uses: actions/upload-artifact@v3
               with:
                   name: chapiteau-cli-${{ matrix.os }}-${{ matrix.arch }}
-                  path: bin/chapiteau-cli-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
+                  path: bin/chapiteau-cli-${{ matrix.os }}-${{ matrix.arch }}
 
     release:
         needs: build
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-            - name: Calculate version
-              id: semver
-              uses: paulhatch/semantic-version@v5.3.0
-              with:
-                  tag_prefix: "v"
-                  major_pattern: "BREAKING CHANGE:"
-                  minor_pattern: "feat:"
-
-            - name: Create Release
+            - name: Create GitHub Release
               id: create_release
               uses: actions/create-release@v1
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                  tag_name: v${{ steps.semver.outputs.version }}
-                  release_name: Release v${{ steps.semver.outputs.version }}
+                  tag_name: ${{ github.ref }}
+                  release_name: Release ${{ github.ref }}
                   draft: false
                   prerelease: false
 
-            - name: Download all workflow run artifacts
-              uses: actions/download-artifact@v3
-
-            - name: Attach binaries to release
+            - name: Upload Release Assets
               uses: actions/upload-release-asset@v1
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: ./chapiteau-cli-*/*
-                  asset_name: chapiteau-cli-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}
+                  asset_path: bin/
+                  asset_name: chapiteau-cli-${{ matrix.os }}-${{ matrix.arch }}
                   asset_content_type: application/octet-stream
 
-    publish-npm:
+    publish:
         needs: release
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: "18"
-                  registry-url: "https://registry.npmjs.org"
+                  node-version: "20"
 
-            - name: Update package.json version
-              run: |
-                  npm version ${{ needs.release.outputs.version }} --no-git-tag-version
-
-            - name: Publish to npm
-              run: npm publish
+            - name: Run semantic-release
+              uses: cycjimmy/semantic-release-action@v3
               env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
