@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const { Command } = require("commander");
 const { uploadIndexHtml, uploadReport, isDirectory } = require("./upload");
 
@@ -6,7 +7,7 @@ const program = new Command();
 program
     .name("chapiteau-cli")
     .description("Upload report/data to the chapiteau service")
-    .version("1.0.3");
+    .version("1.0.4");
 
 program
     .command("upload")
