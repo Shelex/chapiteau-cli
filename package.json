@@ -1,19 +1,19 @@
 {
     "name": "chapiteau-cli",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "cli for chapiteau service",
-    "scripts": {
-        "postinstall": "node install.js"
-    },
     "private": false,
-    "files": [
-        "bin", "install.js"
-    ],
     "bin": {
-        "chapiteau-cli": "./bin/chapiteau-cli-${platform}-${arch}"
+        "chapiteau-cli": "index.js"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Shelex/chapiteau-cli.git"
+    },
+    "dependencies": {
+        "axios": "^1.7.2",
+        "commander": "^12.1.0",
+        "form-data": "^4.0.0",
+        "yargs": "^17.7.2"
     }
 }

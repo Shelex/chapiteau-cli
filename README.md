@@ -17,8 +17,8 @@ In case you have report hosted elsewhere, you can still link it with report by p
  - `--url` (required): The URL of the Chapiteau service.
  - `--auth` (required): Authentication token for the Chapiteau service.
  - `--project` (required): Project ID - you can take it from chapiteau service when new project is created.
- - `--build-id`: CI Build ID (optional).
  - `--build-name`: CI Build Name (optional).
+ - `--build-url`: CI Build url (optional).
  - `--report-url`: Playwright Report URL hosted elsewhere (optional).
 
 ## Examples
@@ -26,7 +26,7 @@ In case you have report hosted elsewhere, you can still link it with report by p
 
 To upload a folder containing a report:
 ```sh
-chapiteau-cli upload --path "/path/to/folder" --url "https://chapiteau.shelex.dev" --auth "your_token" --project "projectID" --build-id "buildID" --build-name "buildName"
+chapiteau-cli upload --path "/path/to/folder" --url "https://chapiteau.shelex.dev" --auth "your_token" --project "projectID" --build-url "build/url" --build-name "buildName"
 ```
 
 In this case report url is not needed, as report will be hosted with help of chapiteau.
@@ -34,5 +34,5 @@ In this case report url is not needed, as report will be hosted with help of cha
 ### Upload a File
 To upload a single file (e.g., index.html):
 ```sh
-chapiteau-cli upload --path "/path/to/index.html" --url "https://chapiteau.shelex.dev" --auth "your_token" --project "projectID" --build-id "buildID" --build-name "buildName" --report-url "https://github.pages.or.other.url"
+chapiteau-cli upload --path "/path/to/index.html" --url "https://chapiteau.shelex.dev" --auth "your_token" --project "projectID" --build-url "build/url" --build-name "buildName" --report-url "https://github.pages.or.other.url"
 ```

@@ -6,49 +6,18 @@ on:
         types: [created]
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                include:
-                    - os: linux
-                      arch: amd64
-                    - os: darwin
-                      arch: amd64
-                    - os: darwin
-                      arch: arm64
-                    - os: windows
-                      arch: amd64
-        permissions:
-            contents: write
-        steps:
-            - uses: actions/checkout@v4
-            - name: Install Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version-file: go.mod
-                  cache-dependency-path: go.sum
-            - name: Build
-              run: |
-                  mkdir -p bin
-                  GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o bin/chapiteau-cli-${{ matrix.os }}-${{ matrix.arch }}
-            - name: Upload apps to release
-              uses: shogo82148/actions-upload-release-asset@v1
-              with:
-                  asset_path: bin/*
-                  upload_url: ${{ github.event.release.upload_url }}
-                  overwrite: true
     publish:
-        needs: build
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
-              
+
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: "20"
+
+            - run: npm i
 
             - name: Configure npm authentication
               run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
