@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const axios = require("axios");
+require("axios-debug-log/enable");
 
 /**
  * @param {URL} url
@@ -8,7 +9,7 @@ const axios = require("axios");
  * @param {FormData} formData
  * @param {boolean} isFile
  */
-async function send(url, input, formData, isFile) {
+async function upload(url, input, formData, isFile) {
     if (input.buildName) url.searchParams.append("buildName", input.buildName);
 
     if (input.buildUrl) url.searchParams.append("buildUrl", input.buildUrl);
@@ -17,35 +18,29 @@ async function send(url, input, formData, isFile) {
         url.searchParams.append("reportUrl", input.reportURL);
 
     try {
-        console.log(
-            `sending query to ${JSON.stringify(
-                {
-                    mathod: "POST",
-                    url: url.href,
-                    data: formData,
-                    headers: {
-                        Authorization: `Bearer ${input.auth}`,
-                        "Content-Type": "multipart/form-data",
-                    },
-                },
-                null,
-                2
-            )}`
-        );
-
         const response = await axios.post(url.href, formData, {
             headers: {
-                Authorization: `Bearer ${input.auth}`,
+                "X-API-Key": input.auth,
                 "Content-Type": "multipart/form-data",
             },
         });
 
         if (response.status !== 200) {
-            throw new Error(`Failed to upload file: ${response.status}`);
+            throw new Error(
+                `Failed to upload file: ${
+                    response.data && response.data.error
+                        ? response.data.error
+                        : response.statusText
+                }`
+            );
         }
     } catch (error) {
-        //console.log(error)
-        throw new Error(`Request failed: ${error.message}`);
+        const message =
+            error.response && error.response.data && error.response.data.error
+                ? error.response.data.error
+                : error.message;
+
+        throw new Error(`Upload failed: ${message}`);
     }
 }
 
@@ -62,9 +57,9 @@ async function uploadIndexHtml(input) {
     const content = fs.readFileSync(input.path);
     formData.append("file", new Blob([content]), fileName);
 
-    const url = new URL(`${input.url}/api/project/${input.project}/file`);
+    const url = new URL(`${input.url}/upload/info`);
 
-    await send(url, input, formData, true);
+    await upload(url, input, formData, true);
     console.log("Index.html uploaded successfully");
 }
 
@@ -77,14 +72,10 @@ async function uploadReport(input) {
 
     const files = fs.readdirSync(input.path, { withFileTypes: true });
     for (const file of files) {
-        console.log(`checking file ${file.path}`);
         if (!file.isDirectory()) {
-            console.log(`is not directory`);
             const filePath = path.join(input.path, file.name);
-            console.log(`reading ${filePath}...`);
             const fileContent = fs.readFileSync(filePath);
             const blob = new Blob([fileContent]);
-            console.log(`got fileContent: ${fileContent.length}`);
             formData.append("files", blob, file.name);
 
             if (file.name === "index.html") {
@@ -97,10 +88,9 @@ async function uploadReport(input) {
         throw new Error("index.html file not found in the provided folder");
     }
 
-    const url = new URL(`${input.url}/api/project/${input.project}/report`);
-    console.log(`got url: ${input.url}/api/project/${input.project}/report`);
+    const url = new URL(`${input.url}/upload/report`);
 
-    await send(url, input, formData, false);
+    await upload(url, input, formData, false);
     console.log("Playwright report uploaded successfully");
 }
 

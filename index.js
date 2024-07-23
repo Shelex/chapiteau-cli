@@ -13,9 +13,11 @@ program
     .command("upload")
     .description("Upload a report or just index.html file")
     .requiredOption("--path <path>", "Path to the folder or file to upload")
-    .requiredOption("--url <url>", "Chapiteau service url")
+    .requiredOption(
+        "--url <url>",
+        "Chapiteau service url for specific team and project"
+    )
     .requiredOption("--auth <auth>", "Authentication token")
-    .requiredOption("--project <project>", "Project ID")
     .option("--build-url <buildUrl>", "CI Build URL")
     .option("--build-name <buildName>", "CI Build Name")
     .option(
@@ -30,15 +32,13 @@ program
             path: options.path,
             url: options.url,
             auth: options.auth,
-            project: options.project,
             buildUrl: options.buildUrl,
             buildName: options.buildName,
-            reportURL: options.reportURL,
+            reportURL: options.reportUrl,
         };
 
         try {
             const isDir = isDirectory(args.path);
-            console.log(`isDir = ${isDir}`);
             if (isDir) {
                 await uploadReport(args);
             } else {
