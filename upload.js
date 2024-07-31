@@ -122,11 +122,23 @@ function appendDirectoryToFormData(files, formData, src, relativePath = "") {
         const dirFiles = fs.readdirSync(filePath, {
             withFileTypes: true,
         });
+
+        // copy assets from root / to /trace as well
+        // as trace/index.html wants assets in /trace/assets folder
+        if (file.name === "assets") {
+            appendDirectoryToFormData(
+                dirFiles,
+                formData,
+                path.join(src, file.name),
+                path.join(relativePath, "trace", file.name)
+            );
+        }
+
         appendDirectoryToFormData(
             dirFiles,
             formData,
             path.join(src, file.name),
-            file.name
+            path.join(relativePath, file.name)
         );
     }
 }
