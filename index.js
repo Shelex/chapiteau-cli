@@ -7,7 +7,7 @@ const program = new Command();
 program
     .name("chapiteau-cli")
     .description("Upload report/data to the chapiteau service")
-    .version("1.0.4");
+    .version("1.2.1");
 
 program
     .command("upload")
