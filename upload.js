@@ -68,25 +68,16 @@ async function uploadIndexHtml(input) {
  */
 async function uploadReport(input) {
     const formData = new FormData();
-    let hasIndexHtml = false;
+    const files = fs.readdirSync(input.path, {
+        withFileTypes: true,
+    });
 
-    const files = fs.readdirSync(input.path, { withFileTypes: true });
-    for (const file of files) {
-        if (!file.isDirectory()) {
-            const filePath = path.join(input.path, file.name);
-            const fileContent = fs.readFileSync(filePath);
-            const blob = new Blob([fileContent]);
-            formData.append("files", blob, file.name);
-
-            if (file.name === "index.html") {
-                hasIndexHtml = true;
-            }
-        }
-    }
-
+    const hasIndexHtml = files.some((file) => file.name === "index.html");
     if (!hasIndexHtml) {
         throw new Error("index.html file not found in the provided folder");
     }
+
+    appendDirectoryToFormData(files, formData, input.path);
 
     const url = new URL(`${input.url}/upload/report`);
 
@@ -105,6 +96,37 @@ function isDirectory(path) {
     } catch (error) {
         throw new Error(
             `Failed to check if path is a directory: ${error.message}`
+        );
+    }
+}
+
+/**
+ * Recursively append files to FormData
+ * @param {fs.Dirent[]} files
+ * @param {FormData} formData
+ * @param {string} src
+ * @param {string} relativePath
+ */
+function appendDirectoryToFormData(files, formData, src, relativePath = "") {
+    for (const file of files) {
+        const filePath = path.join(src, file.name);
+        const stats = fs.statSync(filePath);
+
+        if (stats.isFile()) {
+            const fileContent = fs.readFileSync(filePath);
+            const blob = new Blob([fileContent]);
+            formData.append("files", blob, path.join(relativePath, file.name));
+            continue;
+        }
+
+        const dirFiles = fs.readdirSync(filePath, {
+            withFileTypes: true,
+        });
+        appendDirectoryToFormData(
+            dirFiles,
+            formData,
+            path.join(src, file.name),
+            file.name
         );
     }
 }
