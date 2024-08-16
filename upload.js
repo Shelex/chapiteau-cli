@@ -35,12 +35,21 @@ async function upload(url, input, formData, isFile) {
             );
         }
     } catch (error) {
-        const message =
-            error.response && error.response.data && error.response.data.error
-                ? error.response.data.error
-                : error.message;
-
-        throw new Error(`Upload failed: ${message}`);
+        if (
+            error.response &&
+            error.response.data &&
+            error.response.data.error
+        ) {
+            throw new Error(`Upload failed: ${error.response.data.error}`);
+        }
+        if (
+            error.response &&
+            error.response.data &&
+            error.response.data.message
+        ) {
+            throw new Error(`Upload failed: ${error.response.data.message}`);
+        }
+        throw new Error(`Upload failed: ${error.message}`);
     }
 }
 
