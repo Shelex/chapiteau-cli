@@ -29,7 +29,7 @@ async function upload(url, input, formData, isFile) {
             throw new Error(
                 `Failed to upload file: ${
                     response.data && response.data.error
-                        ? response.data.error
+                        ? response.data.error?.message ?? response.data.error
                         : response.statusText
                 }`
             );
